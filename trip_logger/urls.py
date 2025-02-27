@@ -4,6 +4,8 @@ from rest_framework import permissions
 from drf_yasg.views import get_schema_view  # type: ignore
 from drf_yasg import openapi  # type: ignore
 
+
+# Swagger/OpenAPI schema configuration
 schema_view = get_schema_view(
     openapi.Info(
         title="Trip Planner API",
@@ -17,8 +19,12 @@ schema_view = get_schema_view(
     permission_classes=(permissions.AllowAny,),
 )
 
+# URL patterns for the app
 urlpatterns = [
+    # Admin panel (not used though)
     path('admin/', admin.site.urls),
+
+    # API endpoints
     path('api/', include('app.urls')),
 
     # Swagger UI
