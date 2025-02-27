@@ -8,12 +8,14 @@ from reportlab.pdfgen import canvas
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from rest_framework.generics import RetrieveAPIView
 from .models import Trip
 from .serializers import TripSerializer
 from datetime import datetime
 
 # Use OpenRouteService API key if available, otherwise use the free tier
 OPENROUTESERVICE_API_KEY = getattr(settings, "OPENROUTESERVICE_API_KEY", "")
+
 
 class TripAPI(APIView):
     """
@@ -56,19 +58,21 @@ class TripAPI(APIView):
                 dropoff_coords = dropoff_geocode["features"][0]["geometry"]["coordinates"]
 
                 # Get route details from current to pickup
-                directions_url = "https://api.openrouteservice.org/v2/directions/driving-car"
+                directions_url = "https://api.openrouteservice.org/v2/directions/driving-car/json"
+
                 directions_params_current_to_pickup = {
-                    "start": f"{current_coords[0]},{current_coords[1]}",
-                    "end": f"{pickup_coords[0]},{pickup_coords[1]}"
+                    "coordinates": [[current_coords[0], current_coords[1]], [pickup_coords[0], pickup_coords[1]]]
                 }
-                directions_current_to_pickup = requests.get(directions_url, params=directions_params_current_to_pickup, headers=headers).json()
+
+                directions_current_to_pickup = requests.post(directions_url, json=directions_params_current_to_pickup, headers=headers).json()
 
                 # Get route details from pickup to dropoff
                 directions_params_pickup_to_dropoff = {
-                    "start": f"{pickup_coords[0]},{pickup_coords[1]}",
-                    "end": f"{dropoff_coords[0]},{dropoff_coords[1]}"
+                    "coordinates": [[pickup_coords[0], pickup_coords[1]], [dropoff_coords[0], dropoff_coords[1]]]
                 }
-                directions_pickup_to_dropoff = requests.get(directions_url, params=directions_params_pickup_to_dropoff, headers=headers).json()
+
+                directions_pickup_to_dropoff = requests.post(directions_url, json=directions_params_pickup_to_dropoff, headers=headers).json()
+
 
                 if not directions_current_to_pickup.get("routes") or not directions_pickup_to_dropoff.get("routes"):
                     return Response({"error": "No route found. Please check the locations."}, status=status.HTTP_400_BAD_REQUEST)
@@ -120,13 +124,23 @@ class TripAPI(APIView):
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-    def get(self, request):
+    def get(self, request, pk=None):
         """
-        Retrieve all trips.
+        Retrieve all trips or a single trip by ID.
         """
-        trips = Trip.objects.all()
-        serializer = TripSerializer(trips, many=True)
-        return Response(serializer.data)
+        if pk:
+            # Retrieve a single trip by ID
+            try:
+                trip = Trip.objects.get(id=pk)
+                serializer = TripSerializer(trip)
+                return Response(serializer.data)
+            except Trip.DoesNotExist:
+                return Response({"error": "Trip not found"}, status=status.HTTP_404_NOT_FOUND)
+        else:
+            # Retrieve all trips
+            trips = Trip.objects.all()
+            serializer = TripSerializer(trips, many=True)
+            return Response(serializer.data)
 
 
 class ELDLogAPI(APIView):
