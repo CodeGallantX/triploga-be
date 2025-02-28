@@ -1,0 +1,1 @@
+web: gunicorn trip_logger.wsgi:application
