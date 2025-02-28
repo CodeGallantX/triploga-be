@@ -17,7 +17,7 @@ SECRET_KEY = config("DJANGO_SECRET_KEY")
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ["https://triploga.vercel.app", "https://triploga-be.onrender.com", "localhost", "127.0.0.1"]
+ALLOWED_HOSTS = ["triploga.vercel.app", "triploga-be.onrender.com", "localhost", "127.0.0.1"]
 
 
 # Application definition
